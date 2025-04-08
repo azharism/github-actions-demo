@@ -1,0 +1,17 @@
+name: Print Date on Push (Self-hosted)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  print-date:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Print the current date
+        run: date
