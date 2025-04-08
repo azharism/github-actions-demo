@@ -8,56 +8,62 @@ on:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      
       - name: Use Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '14.x'
+          node-version: '14'
+
       - name: Install dependencies
         run: npm install
-      - run: npm run build --if-present
-      # - run: npm test
+
+      - name: Build project
+        run: npm run build --if-present
+
       - name: Create zip bundle
         run: |
-            echo 'zippig artifact'
-            zip -r ./${{ github.sha }}.zip .
-            pwd
-            ls -la
+          echo 'Zipping artifact...'
+          zip -r ${{ github.sha }}.zip .
+          ls -la
+
       - name: Archive artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: zipped-bundle
           path: ${{ github.sha }}.zip
 
   publish:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
+
     steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: zipped-bundle
+
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.github_token }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.run_number }}
+          tag_name: v${{ github.run_number }}
           release_name: Release ${{ github.run_number }}
-          body: New release for ${{ github.sha }}
+          body: New release for commit ${{ github.sha }}
           draft: false
           prerelease: false
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: zipped-bundle
+
       - name: Upload release asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.github_token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./${{ github.sha }}.zip
           asset_name: source_code_with_npm_modules.zip
           asset_content_type: application/zip
